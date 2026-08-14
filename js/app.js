@@ -12,7 +12,25 @@
     ["STEP 06 · REVIEW", "입력 검토", "누락, 단위 오류와 산정 제외 자료를 계산 전에 확인합니다."],
     ["STEP 07 · RESULTS", "산정 결과", "배출량과 감축량, 계산에 사용된 근거를 한눈에 확인합니다."]
   ];
-  const nextLabels = [null, "적용조건 확인", "산정조건 설정", "베이스라인 입력", "월별 자료 입력", "입력 검토", "결과 계산", "처음으로"];
+  const nextLabels = [null, "적용조건 확인", "산정조건 설정", "베이스라인 입력", "월별 자료 입력", "입력 검토", "결과 계산", "처음으로", null];
+
+  stepMeta.push([
+    "FACILITY MAP · READY-MIX CONCRETE",
+    "국내 레미콘 업체 지도",
+    "OpenStreetMap의 공개 데이터를 기준으로 국내 레미콘·콘크리트 생산시설을 찾아봅니다."
+  ]);
+
+  const READY_MIX_CACHE_KEY = "greeners-ready-mix-facilities-v1";
+  const READY_MIX_CACHE_TTL = 24 * 60 * 60 * 1000;
+  const READY_MIX_REQUEST_TIMEOUT = 30000;
+  const OVERPASS_ENDPOINT = "https://overpass-api.de/api/interpreter";
+  const READY_MIX_FALLBACK = [
+    { id: "example-seoul", name: "예시 레미콘 시설 (서울)", region: "서울특별시", address: "서울특별시 (예시 위치)", lat: 37.5665, lng: 126.9780, isExample: true },
+    { id: "example-busan", name: "예시 레미콘 시설 (부산)", region: "부산광역시", address: "부산광역시 (예시 위치)", lat: 35.1796, lng: 129.0756, isExample: true },
+    { id: "example-daegu", name: "예시 레미콘 시설 (대구)", region: "대구광역시", address: "대구광역시 (예시 위치)", lat: 35.8714, lng: 128.6014, isExample: true },
+    { id: "example-gwangju", name: "예시 레미콘 시설 (광주)", region: "광주광역시", address: "광주광역시 (예시 위치)", lat: 35.1595, lng: 126.8526, isExample: true },
+    { id: "example-daejeon", name: "예시 레미콘 시설 (대전)", region: "대전광역시", address: "대전광역시 (예시 위치)", lat: 36.3504, lng: 127.3845, isExample: true }
+  ];
 
   const conditions = [
     { id: "EL-01", title: "중온 바인더 방식", text: "중온 첨가제를 미리 주입한 사전 혼합 방식입니다.", evidence: "바인더 제품 규격서·납품서" },
@@ -62,6 +80,13 @@
   let pendingEvidence = {};
   let toastTimer = null;
   let saveTimer = null;
+  let readyMixMap = null;
+  let readyMixLayer = null;
+  let readyMixFacilities = [];
+  let readyMixFiltered = [];
+  let readyMixSelectedId = null;
+  let readyMixLoadPromise = null;
+  let readyMixMarkers = new Map();
 
   const els = {
     panels: [...document.querySelectorAll("[data-step-panel]")],
@@ -86,6 +111,7 @@
   function init() {
     bindStaticFields();
     bindActions();
+    bindReadyMixControls();
     renderAll();
   }
 
@@ -484,16 +510,16 @@
 
   function updateStepView() {
     const requestedStep = Number(state.currentStep);
-    const step = Math.min(7, Math.max(0, Number.isFinite(requestedStep) ? requestedStep : 0));
+    const step = Math.min(8, Math.max(0, Number.isFinite(requestedStep) ? requestedStep : 0));
     state.currentStep = step;
     els.panels.forEach(panel => panel.hidden = Number(panel.dataset.stepPanel) !== step);
     const meta = stepMeta[step];
     els.kicker.textContent = meta[0];
     els.title.textContent = meta[1];
     els.description.textContent = meta[2];
-    els.footer.hidden = step === 0;
+    els.footer.hidden = step === 0 || step === 8;
     els.prev.hidden = step <= 1;
-    if (step > 0) {
+    if (step > 0 && step < 8) {
       els.next.innerHTML = `${nextLabels[step]}${step < 7 ? " <span>→</span>" : ""}`;
       els.footerLabel.textContent = `${step} / 7`;
       els.progress.style.width = `${(step / 7) * 100}%`;
@@ -501,6 +527,7 @@
     updateNavigationState();
     clearError();
     window.scrollTo({ top: 0, behavior: "smooth" });
+    if (step === 8) window.setTimeout(activateReadyMixMap, 80);
   }
 
   function updateNavigationState() {
@@ -512,6 +539,7 @@
   }
 
   function requestStep(target) {
+    if (target === 8) return goToStep(8);
     if (target <= state.currentStep) return goToStep(target);
     for (let step = 1; step < target; step += 1) {
       const validation = validateStep(step, true);
@@ -525,7 +553,7 @@
   }
 
   function goToStep(step) {
-    state.currentStep = Math.min(7, Math.max(0, step));
+    state.currentStep = Math.min(8, Math.max(0, step));
     scheduleSave();
     renderReview();
     renderResults();
@@ -804,6 +832,282 @@
     state.currentStep = 0;
     syncStaticBindings(); renderAll(); scheduleSave();
     showToast("PRD 사례 기반의 예시 데이터를 불러왔습니다.");
+  }
+
+  function bindReadyMixControls() {
+    const search = document.getElementById("ready-mix-search");
+    const region = document.getElementById("ready-mix-region");
+    const searchButton = document.getElementById("ready-mix-search-button");
+    const resetButton = document.getElementById("ready-mix-reset");
+    const retryButton = document.getElementById("retry-ready-mix");
+    const list = document.getElementById("ready-mix-list");
+    if (!search || !region || !list) return;
+
+    const apply = () => applyReadyMixFilters(true);
+    searchButton?.addEventListener("click", apply);
+    search.addEventListener("search", apply);
+    search.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        apply();
+      }
+    });
+    region.addEventListener("change", apply);
+    resetButton?.addEventListener("click", () => {
+      search.value = "";
+      region.value = "all";
+      applyReadyMixFilters(true);
+      search.focus();
+    });
+    retryButton?.addEventListener("click", () => loadReadyMixFacilities(true));
+    list.addEventListener("click", event => {
+      const card = event.target.closest("[data-ready-mix-id]");
+      if (card) selectReadyMixFacility(card.dataset.readyMixId, true);
+    });
+  }
+
+  function activateReadyMixMap() {
+    const container = document.getElementById("ready-mix-map");
+    if (!container) return;
+    if (!readyMixMap) {
+      if (!window.L) {
+        useReadyMixFallback("지도 라이브러리를 불러오지 못했습니다. 예시 데이터를 목록에 표시합니다.");
+        setReadyMixLoading(false);
+        return;
+      }
+      readyMixMap = window.L.map(container, { zoomControl: true }).setView([36.35, 127.8], 7);
+      window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(readyMixMap);
+      readyMixLayer = window.L.layerGroup().addTo(readyMixMap);
+    }
+    readyMixMap.invalidateSize();
+    if (!readyMixLoadPromise && !readyMixFacilities.length) loadReadyMixFacilities(false);
+    else renderReadyMixMap(false);
+  }
+
+  async function loadReadyMixFacilities(forceRefresh) {
+    if (readyMixLoadPromise) return readyMixLoadPromise;
+    setReadyMixLoading(true);
+    hideReadyMixError();
+
+    readyMixLoadPromise = (async () => {
+      if (!forceRefresh) {
+        const cached = readReadyMixCache();
+        if (cached) {
+          readyMixFacilities = cached.facilities;
+          applyReadyMixFilters(true, `24시간 캐시 · ${formatReadyMixTime(cached.fetchedAt)} 기준`);
+          setReadyMixLoading(false);
+          return;
+        }
+      }
+
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), READY_MIX_REQUEST_TIMEOUT);
+      try {
+        const query = `[out:json][timeout:25];
+area["ISO3166-1"="KR"][admin_level=2]->.searchArea;
+(
+  nwr["industrial"="concrete_plant"](area.searchArea);
+  nwr["man_made"="works"]["product"="concrete"](area.searchArea);
+);
+out center tags;`;
+        const response = await fetch(OVERPASS_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+          body: `data=${encodeURIComponent(query)}`,
+          signal: controller.signal
+        });
+        if (!response.ok) throw new Error(`Overpass API 응답 오류 (${response.status})`);
+        const payload = await response.json();
+        const facilities = normalizeReadyMixFacilities(payload?.elements);
+        if (!facilities.length) {
+          useReadyMixFallback("공개 지도에서 검색 결과를 찾지 못해 예시 데이터를 표시합니다.");
+          return;
+        }
+        readyMixFacilities = facilities;
+        writeReadyMixCache(facilities);
+        applyReadyMixFilters(true, `OpenStreetMap 공개 데이터 · ${formatReadyMixTime(Date.now())} 조회`);
+      } catch (error) {
+        const reason = error?.name === "AbortError"
+          ? "업체 정보 요청 시간이 초과되어 예시 데이터를 표시합니다."
+          : "업체 정보를 불러오지 못해 예시 데이터를 표시합니다.";
+        useReadyMixFallback(reason);
+      } finally {
+        window.clearTimeout(timeoutId);
+        setReadyMixLoading(false);
+      }
+    })();
+
+    try {
+      await readyMixLoadPromise;
+    } finally {
+      readyMixLoadPromise = null;
+    }
+  }
+
+  function normalizeReadyMixFacilities(elements) {
+    if (!Array.isArray(elements)) return [];
+    const normalized = elements.map(element => {
+      const lat = Number(element.lat ?? element.center?.lat);
+      const lng = Number(element.lon ?? element.center?.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+      const tags = element.tags || {};
+      const name = String(tags.name || tags.operator || tags.brand || "이름 미등록 콘크리트 생산시설").trim();
+      const addressParts = [tags["addr:province"], tags["addr:city"], tags["addr:district"], tags["addr:street"], tags["addr:housenumber"]].filter(Boolean);
+      const address = addressParts.join(" ") || "주소 정보 없음";
+      return {
+        id: `osm-${element.type}-${element.id}`,
+        name,
+        operator: String(tags.operator || "").trim(),
+        region: inferReadyMixRegion(tags, address),
+        address,
+        lat,
+        lng,
+        osmType: element.type,
+        osmId: element.id,
+        isExample: false
+      };
+    }).filter(Boolean);
+
+    const seen = new Set();
+    return normalized.filter(item => {
+      const nameKey = item.name.replace(/\s+/g, "").toLocaleLowerCase("ko-KR");
+      const locationKey = `${item.lat.toFixed(4)},${item.lng.toFixed(4)}`;
+      const key = `${nameKey}|${locationKey}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).sort((a, b) => a.name.localeCompare(b.name, "ko-KR"));
+  }
+
+  function inferReadyMixRegion(tags, address) {
+    const regionText = [tags["addr:province"], tags["addr:state"], tags["addr:city"], tags["addr:county"], address].filter(Boolean).join(" ");
+    const regions = [
+      ["서울", "서울특별시"], ["부산", "부산광역시"], ["대구", "대구광역시"], ["인천", "인천광역시"],
+      ["광주", "광주광역시"], ["대전", "대전광역시"], ["울산", "울산광역시"], ["세종", "세종특별자치시"],
+      ["경기", "경기도"], ["강원", "강원특별자치도"], ["충북", "충청북도"], ["충청북", "충청북도"],
+      ["충남", "충청남도"], ["충청남", "충청남도"], ["전북", "전북특별자치도"], ["전라북", "전북특별자치도"],
+      ["전남", "전라남도"], ["전라남", "전라남도"], ["경북", "경상북도"], ["경상북", "경상북도"],
+      ["경남", "경상남도"], ["경상남", "경상남도"], ["제주", "제주특별자치도"]
+    ];
+    return regions.find(([needle]) => regionText.includes(needle))?.[1] || "지역 미상";
+  }
+
+  function applyReadyMixFilters(fitMap = true, statusText = "") {
+    const search = document.getElementById("ready-mix-search");
+    const region = document.getElementById("ready-mix-region");
+    if (!search || !region) return;
+    const keyword = search.value.trim().toLocaleLowerCase("ko-KR");
+    const selectedRegion = region.value;
+    readyMixFiltered = readyMixFacilities.filter(item => {
+      const haystack = [item.name, item.operator, item.address, item.region].join(" ").toLocaleLowerCase("ko-KR");
+      return (!keyword || haystack.includes(keyword)) && (selectedRegion === "all" || item.region === selectedRegion);
+    });
+    if (!readyMixFiltered.some(item => item.id === readyMixSelectedId)) readyMixSelectedId = null;
+    renderReadyMixList(statusText);
+    renderReadyMixMap(fitMap);
+  }
+
+  function renderReadyMixList(statusText = "") {
+    const list = document.getElementById("ready-mix-list");
+    const count = document.getElementById("ready-mix-count");
+    const status = document.getElementById("ready-mix-status");
+    const empty = document.getElementById("ready-mix-empty");
+    if (!list || !count || !status || !empty) return;
+    count.textContent = `${readyMixFiltered.length}개`;
+    const usingExamples = readyMixFacilities.some(item => item.isExample);
+    status.textContent = statusText || (usingExamples ? "예시 데이터입니다. 실제 업체 정보가 아닙니다." : "OpenStreetMap 공개 데이터 검색 결과입니다.");
+    empty.hidden = readyMixFiltered.length > 0;
+    list.hidden = readyMixFiltered.length === 0;
+    list.innerHTML = readyMixFiltered.map(item => `<div role="listitem"><button class="company-card${item.id === readyMixSelectedId ? " is-selected" : ""}" type="button" data-ready-mix-id="${escapeAttr(item.id)}" aria-current="${item.id === readyMixSelectedId ? "true" : "false"}">
+      <span class="company-card__head"><strong>${escapeHtml(item.name)}</strong><span class="company-card__badge">${item.isExample ? "예시 데이터" : "OSM"}</span></span>
+      <p>${escapeHtml(item.address)}</p>
+      <span class="company-card__meta"><span>${escapeHtml(item.region)}</span><span>${item.isExample ? "검증용 위치" : "공개 지도 정보"}</span></span>
+    </button></div>`).join("");
+  }
+
+  function renderReadyMixMap(fitMap) {
+    if (!readyMixMap || !readyMixLayer || !window.L) return;
+    readyMixLayer.clearLayers();
+    readyMixMarkers = new Map();
+    readyMixFiltered.forEach(item => {
+      const accessibleName = String(item.name || "레미콘 생산시설").replace(/[\u0000-\u001F\u007F]/g, " ").trim() || "레미콘 생산시설";
+      const marker = window.L.marker([item.lat, item.lng], {
+        title: accessibleName,
+        alt: `${accessibleName} 위치`,
+        keyboard: true
+      });
+      marker.bindPopup(`<strong>${escapeHtml(item.name)}</strong><br>${escapeHtml(item.address)}${item.isExample ? "<br><em>예시 데이터 · 실제 업체 정보 아님</em>" : ""}`);
+      marker.bindTooltip(escapeHtml(item.name));
+      marker.on("click", () => selectReadyMixFacility(item.id, false));
+      marker.addTo(readyMixLayer);
+      readyMixMarkers.set(item.id, marker);
+    });
+    readyMixMap.invalidateSize();
+    if (!fitMap) return;
+    if (!readyMixFiltered.length) readyMixMap.setView([36.35, 127.8], 7);
+    else if (readyMixFiltered.length === 1) readyMixMap.setView([readyMixFiltered[0].lat, readyMixFiltered[0].lng], 13);
+    else readyMixMap.fitBounds(window.L.latLngBounds(readyMixFiltered.map(item => [item.lat, item.lng])), { padding: [24, 24], maxZoom: 13 });
+  }
+
+  function selectReadyMixFacility(id, fromList) {
+    const facility = readyMixFiltered.find(item => item.id === id);
+    if (!facility) return;
+    readyMixSelectedId = id;
+    renderReadyMixList();
+    const marker = readyMixMarkers.get(id);
+    if (marker && readyMixMap) {
+      readyMixMap.setView(marker.getLatLng(), Math.max(readyMixMap.getZoom(), 13), { animate: true });
+      marker.openPopup();
+    }
+    if (!fromList) [...document.querySelectorAll("[data-ready-mix-id]")].find(card => card.dataset.readyMixId === id)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function useReadyMixFallback(message) {
+    readyMixFacilities = READY_MIX_FALLBACK.map(item => ({ ...item }));
+    showReadyMixError(`${message} 아래 항목은 기능 확인용 예시이며 실제 업체 정보가 아닙니다.`);
+    applyReadyMixFilters(true, "예시 데이터 · 실제 업체 정보가 아닙니다.");
+  }
+
+  function readReadyMixCache() {
+    try {
+      const cached = JSON.parse(localStorage.getItem(READY_MIX_CACHE_KEY));
+      if (!cached || !Number.isFinite(cached.fetchedAt) || Date.now() - cached.fetchedAt >= READY_MIX_CACHE_TTL) return null;
+      if (!Array.isArray(cached.facilities) || !cached.facilities.length) return null;
+      const facilities = cached.facilities.filter(item => Number.isFinite(item.lat) && Number.isFinite(item.lng) && !item.isExample);
+      return facilities.length ? { fetchedAt: cached.fetchedAt, facilities } : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function writeReadyMixCache(facilities) {
+    try {
+      localStorage.setItem(READY_MIX_CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), facilities }));
+    } catch (_) { /* file preview or storage policy may block cache */ }
+  }
+
+  function setReadyMixLoading(isLoading) {
+    const loading = document.getElementById("ready-mix-loading");
+    if (loading) loading.hidden = !isLoading;
+  }
+
+  function showReadyMixError(message) {
+    const error = document.getElementById("ready-mix-error");
+    const detail = document.getElementById("ready-mix-error-message");
+    if (detail) detail.textContent = message;
+    if (error) error.hidden = false;
+  }
+
+  function hideReadyMixError() {
+    const error = document.getElementById("ready-mix-error");
+    if (error) error.hidden = true;
+  }
+
+  function formatReadyMixTime(timestamp) {
+    return new Intl.DateTimeFormat("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(timestamp));
   }
 
   function factorComplete(factor) {

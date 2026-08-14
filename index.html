@@ -7,7 +7,8 @@
   <title>GREENers Carbon | 중온 아스팔트 감축량 산정</title>
   <link rel="icon" type="image/svg+xml" href="assets/brand/greeners-favicon.svg">
   <link rel="apple-touch-icon" href="assets/brand/greeners-logo.png">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3yn5a3ZccjMZQ2yN4r7+9pG8F9h5w=" crossorigin="anonymous">
+  <link rel="stylesheet" href="css/styles.css?v=20260814-map3">
 </head>
 <body>
   <div class="app-shell">
@@ -42,6 +43,9 @@
         </button>
         <button class="step-link" data-step-target="7" type="button">
           <span class="step-index">07</span><span><strong>산정 결과</strong><small>감축량과 근거</small></span>
+        </button>
+        <button class="step-link" data-step-target="8" type="button">
+          <span class="step-index">08</span><span><strong>국내 레미콘 업체 지도</strong><small>지역별 업체 검색</small></span>
         </button>
       </nav>
 
@@ -263,6 +267,77 @@
           </div>
           <div id="result-content"></div>
         </section>
+        <section class="step-panel map-workspace" data-step-panel="8" hidden aria-labelledby="ready-mix-map-title">
+          <div class="section-heading row-heading">
+            <div>
+              <span class="section-number">08</span>
+              <h2 id="ready-mix-map-title">국내 레미콘 업체 지도</h2>
+            </div>
+            <p>업체명이나 주소를 검색하고 지역별 레미콘 업체 위치를 지도에서 확인합니다.</p>
+          </div>
+
+          <div class="panel-card map-toolbar" role="search" aria-label="레미콘 업체 검색">
+            <div class="map-toolbar__group">
+              <label class="field" for="ready-mix-search">
+                <span>업체명 또는 주소</span>
+                <input id="ready-mix-search" type="search" inputmode="search" autocomplete="off" placeholder="예: 성남, 그린레미콘">
+              </label>
+              <label class="field" for="ready-mix-region">
+                <span>지역</span>
+                <select id="ready-mix-region" class="region-filter">
+                  <option value="all">전국</option>
+                  <option value="서울특별시">서울특별시</option>
+                  <option value="부산광역시">부산광역시</option>
+                  <option value="대구광역시">대구광역시</option>
+                  <option value="인천광역시">인천광역시</option>
+                  <option value="광주광역시">광주광역시</option>
+                  <option value="대전광역시">대전광역시</option>
+                  <option value="울산광역시">울산광역시</option>
+                  <option value="세종특별자치시">세종특별자치시</option>
+                  <option value="경기도">경기도</option>
+                  <option value="강원특별자치도">강원특별자치도</option>
+                  <option value="충청북도">충청북도</option>
+                  <option value="충청남도">충청남도</option>
+                  <option value="전북특별자치도">전북특별자치도</option>
+                  <option value="전라남도">전라남도</option>
+                  <option value="경상북도">경상북도</option>
+                  <option value="경상남도">경상남도</option>
+                  <option value="제주특별자치도">제주특별자치도</option>
+                  <option value="지역 미상">지역 미상</option>
+                </select>
+              </label>
+              <button class="button button-primary" id="ready-mix-search-button" type="button">검색</button>
+              <button class="button button-ghost" id="ready-mix-reset" type="button">초기화</button>
+            </div>
+          </div>
+
+          <div class="notice map-status is-loading" id="ready-mix-loading" role="status" aria-live="polite">
+            <span class="notice-icon" aria-hidden="true">…</span>
+            <div><strong>업체 정보를 불러오고 있습니다.</strong><p>잠시만 기다려주세요.</p></div>
+          </div>
+          <div class="notice notice-error map-status is-error" id="ready-mix-error" role="alert" hidden>
+            <span class="notice-icon" aria-hidden="true">!</span>
+            <div><strong>업체 정보를 불러오지 못했습니다.</strong><p id="ready-mix-error-message">네트워크 연결을 확인한 뒤 다시 시도해주세요.</p><button class="button button-small button-outline" id="retry-ready-mix" type="button">다시 시도</button></div>
+          </div>
+
+          <div class="map-layout">
+            <aside class="panel-card company-list-panel" aria-labelledby="ready-mix-list-title">
+              <div class="table-title">
+                <div><h3 id="ready-mix-list-title">검색된 업체</h3><p id="ready-mix-status" class="map-status" role="status" aria-live="polite" aria-atomic="true">업체 정보를 준비하고 있습니다.</p></div>
+                <strong id="ready-mix-count" aria-label="검색된 업체 수">0개</strong>
+              </div>
+              <div id="ready-mix-list" class="company-list" role="list" aria-label="레미콘 업체 검색 결과"></div>
+              <div class="empty-state is-empty" id="ready-mix-empty" hidden>
+                <span aria-hidden="true">⌖</span><strong>검색 결과가 없습니다.</strong><p>검색어나 지역 필터를 변경해보세요.</p>
+              </div>
+            </aside>
+
+            <div class="panel-card map-panel">
+              <div id="ready-mix-map" class="ready-mix-map" role="region" aria-label="국내 레미콘 업체 위치 지도" tabindex="0"></div>
+              <noscript><p class="notice notice-error">지도를 사용하려면 브라우저에서 JavaScript를 활성화해주세요.</p></noscript>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer class="wizard-footer">
@@ -284,6 +359,7 @@
     </div>
   </div>
 
-  <script src="js/app.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+  <script src="js/app.js?v=20260814-map3"></script>
 </body>
 </html>
