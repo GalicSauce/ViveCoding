@@ -8,6 +8,7 @@
     "dev": "next dev",
     "prebuild": "node scripts/prepare-public.mjs",
     "build": "next build",
+    "postbuild": "node scripts/prepare-dist.mjs",
     "start": "next start"
   },
   "dependencies": {

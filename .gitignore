@@ -3,6 +3,8 @@ node_modules/
 .next/
 .open-next/
 .vinext/
+out/
+dist/
 public/
 .env
 .env.*

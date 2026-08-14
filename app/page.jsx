@@ -1,5 +1,10 @@
-import { redirect } from "next/navigation";
-
 export default function HomePage() {
-  redirect("/index.html");
+  return (
+    <>
+      <meta httpEquiv="refresh" content="0; url=/index.html" />
+      <p>
+        <a href="/index.html">GREENers Carbon Workspace 열기</a>
+      </p>
+    </>
+  );
 }
