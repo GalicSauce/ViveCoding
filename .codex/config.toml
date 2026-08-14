@@ -1,0 +1,24 @@
+# Project-scoped Codex configuration for the GREENers Carbon AI development team.
+
+[features]
+multi_agent = true
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 4
+
+[agents.html_lee]
+description = "HTML 담당 이씨. index.html의 구조, 시맨틱, 폼과 접근성 작업에 사용한다."
+config_file = "./agents/html_lee.toml"
+
+[agents.css_kang]
+description = "CSS 담당 강씨. css/styles.css의 레이아웃, 반응형, 타이포그래피와 시각 접근성 작업에 사용한다."
+config_file = "./agents/css_kang.toml"
+
+[agents.js_seo]
+description = "JS 담당 서씨. js/app.js의 상태, 검증, 계산, DOM 동작과 저장 로직 작업에 사용한다."
+config_file = "./agents/js_seo.toml"
+
+[agents.qa_kim]
+description = "QA 엔지니어 김씨. 기능, 회귀, 접근성, 반응형과 계산 정확성 검증에 사용한다."
+config_file = "./agents/qa_kim.toml"

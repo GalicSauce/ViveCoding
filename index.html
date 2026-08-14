@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#073f39">
+  <title>GREENers Carbon | 중온 아스팔트 감축량 산정</title>
+  <link rel="icon" type="image/svg+xml" href="assets/brand/greeners-favicon.svg">
+  <link rel="apple-touch-icon" href="assets/brand/greeners-logo.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-wrap">
+        <img src="assets/brand/greeners-logo.png" alt="GREENers" class="brand-logo">
+        <span class="brand-symbol" aria-hidden="true"><img src="assets/brand/greeners-logo.png" alt=""></span>
+        <span class="product-name">CARBON WORKSPACE</span>
+      </div>
+
+      <nav class="step-nav" aria-label="산정 진행 단계">
+        <button class="step-link dashboard-link" data-step-target="0" type="button">
+          <span class="step-index" aria-hidden="true">⌂</span><span><strong>모니터링</strong><small>현황과 다음 작업</small></span>
+        </button>
+        <button class="step-link" data-step-target="1" type="button">
+          <span class="step-index">01</span><span><strong>사업장 설정</strong><small>대상과 기간</small></span>
+        </button>
+        <button class="step-link" data-step-target="2" type="button">
+          <span class="step-index">02</span><span><strong>적용조건 확인</strong><small>방법론 적합성</small></span>
+        </button>
+        <button class="step-link" data-step-target="3" type="button">
+          <span class="step-index">03</span><span><strong>산정조건 설정</strong><small>연료와 계수</small></span>
+        </button>
+        <button class="step-link" data-step-target="4" type="button">
+          <span class="step-index">04</span><span><strong>베이스라인</strong><small>사업 전 자료</small></span>
+        </button>
+        <button class="step-link" data-step-target="5" type="button">
+          <span class="step-index">05</span><span><strong>월별 활동자료</strong><small>사업 후 자료</small></span>
+        </button>
+        <button class="step-link" data-step-target="6" type="button">
+          <span class="step-index">06</span><span><strong>입력 검토</strong><small>누락과 제외</small></span>
+        </button>
+        <button class="step-link" data-step-target="7" type="button">
+          <span class="step-index">07</span><span><strong>산정 결과</strong><small>감축량과 근거</small></span>
+        </button>
+      </nav>
+
+      <div class="method-card">
+        <span class="method-card-label">적용 방법론</span>
+        <strong>06A-001-Ver01</strong>
+        <span>Version 01 · 2021.12.28</span>
+        <div class="method-card-status"><i></i> 국내 외부사업 방법론</div>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div>
+          <div class="project-context" aria-label="현재 산정 정보">
+            <span id="context-site">사업장 미설정</span><i></i><span id="context-year">산정기간 미설정</span><i></i><span>06A-001-Ver01</span>
+          </div>
+          <div class="eyebrow" id="step-kicker">STEP 01 · PROJECT SETUP</div>
+          <h1 id="step-title">사업장 설정</h1>
+          <p id="step-description">산정 대상 사업장과 기간을 먼저 정의해주세요.</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="save-state" id="save-state"><span></span> 자동 저장됨</div>
+          <button class="button button-ghost" id="load-sample" type="button">예시 데이터 불러오기</button>
+        </div>
+      </header>
+
+      <main class="content">
+        <div class="notice notice-error" id="page-error" hidden>
+          <span class="notice-icon">!</span><div><strong>확인이 필요합니다</strong><p id="page-error-message"></p></div>
+        </div>
+
+        <section class="step-panel dashboard-panel" data-step-panel="0" hidden>
+          <div class="dashboard-intro">
+            <div><span class="section-number">STATUS OVERVIEW</span><h2>현재 산정 준비 상태</h2><p>입력자료와 증빙을 기준으로 지금 확인해야 할 항목을 보여드립니다.</p></div>
+            <span class="dashboard-updated" id="dashboard-updated">브라우저에 자동 저장</span>
+          </div>
+
+          <div class="dashboard-status-grid" id="dashboard-status-grid"></div>
+
+          <section class="next-task-card" aria-labelledby="next-task-title">
+            <div class="next-task-icon" id="next-task-icon">→</div>
+            <div class="next-task-copy"><span>다음 작업</span><h2 id="next-task-title">사업장 기본정보를 입력해주세요.</h2><p id="next-task-description">사업장과 산정기간을 설정하면 방법론 확인을 시작할 수 있습니다.</p></div>
+            <button class="button button-primary dashboard-primary" id="dashboard-action" type="button">사업장 설정 시작하기 <span>→</span></button>
+          </section>
+
+          <section class="panel-card table-card dashboard-recent-card">
+            <div class="table-title"><div><h3>최근 월별 활동자료</h3><p>최근에 입력한 생산량과 에너지 사용량, 검토 상태입니다.</p></div><button class="button button-small button-outline" id="dashboard-recent-action" type="button">전체 활동자료 보기</button></div>
+            <div class="table-wrap" id="dashboard-recent-wrap">
+              <table class="data-table dashboard-recent-table">
+                <thead><tr><th>대상 월</th><th>생산량</th><th>연료 사용량</th><th>전력 사용량</th><th>상태</th></tr></thead>
+                <tbody id="dashboard-recent-body"></tbody>
+              </table>
+            </div>
+            <div class="empty-state dashboard-empty" id="dashboard-recent-empty"><span>＋</span><strong>입력된 월별 활동자료가 없습니다</strong><p>사업장과 산정조건을 설정한 뒤 월별 자료를 입력해주세요.</p></div>
+          </section>
+
+          <details class="help-details dashboard-help">
+            <summary><span>상태는 어떤 기준으로 구분하나요?</span><small>상태 기준 보기</small></summary>
+            <div class="help-grid"><div><strong>✓ 입력 완료</strong><p>필수 입력과 증빙이 모두 준비된 월입니다.</p></div><div><strong>! 확인 필요</strong><p>계산할 수 있지만 일부 교차증빙이 부족합니다.</p></div><div><strong>× 산정 제외</strong><p>온도·품질 또는 필수 증빙 기준을 충족하지 못했습니다.</p></div><div><strong>예상 감축량</strong><p>현재 입력값과 유효한 계수로 계산한 값입니다.</p></div></div>
+          </details>
+        </section>
+
+        <section class="step-panel" data-step-panel="1">
+          <div class="section-heading">
+            <div><span class="section-number">01</span><h2>어디에서, 언제 발생한 감축인가요?</h2></div>
+            <p>연료·전력·생산량의 집계 경계가 모두 같은지 확인할 수 있도록 사업 정보를 입력합니다.</p>
+          </div>
+
+          <div class="panel-card form-card">
+            <div class="form-grid two-columns">
+              <label class="field field-wide"><span>사업장명 <b>*</b></span><input type="text" data-bind="site.name" placeholder="예: 그리너스 아스콘 제1공장"></label>
+              <label class="field field-wide"><span>사업장 주소 <b>*</b></span><input type="text" data-bind="site.address" placeholder="도로명 주소를 입력해주세요"></label>
+              <label class="field"><span>산정 시작일 <b>*</b></span><input type="date" data-bind="site.startDate"></label>
+              <label class="field"><span>산정 종료일 <b>*</b></span><input type="date" data-bind="site.endDate"></label>
+              <label class="field"><span>생산 방식 <b>*</b></span><select data-bind="site.batch"><option value="">선택해주세요</option><option value="yes">Batch 방식</option><option value="no">연속식 방식</option></select></label>
+              <label class="field"><span>측정 기준시각 <b>*</b><em class="info-tip" title="연료·전력·생산량의 일별 집계 마감 시각입니다.">i</em></span><input type="time" data-bind="site.cutoffTime"></label>
+              <label class="field field-wide"><span>사업경계 설명 <b>*</b></span><textarea rows="4" data-bind="site.boundary" placeholder="중온 아스팔트 생산에 포함되는 설비, 계량기와 물리적 범위를 설명해주세요."></textarea><small class="field-help">예: 골재 투입부터 혼합·출하까지의 생산라인과 해당 라인의 연료 유량계 및 전력계</small></label>
+            </div>
+          </div>
+
+          <div class="context-strip">
+            <div class="context-icon">17:00</div>
+            <div><strong>측정 기준시각이 왜 필요한가요?</strong><p>연료, 전력, 생산량의 집계기간을 일치시키는 기준입니다. 참고 사업계획서에서는 17:00을 사용했지만 사업장 운영 기준에 맞게 입력해주세요.</p></div>
+          </div>
+        </section>
+
+        <section class="step-panel" data-step-panel="2" hidden>
+          <div class="method-hero">
+            <div><span>적용 방법론</span><h2>중온 아스팔트 혼합물 생산을 통한<br>연료 및 온실가스 저감 사업</h2><p>06A-001-Ver01 · Version 01 · 환경부 외부사업 승인 방법론</p></div>
+            <div class="method-stamp"><span>METHOD</span><strong>06A</strong><small>VER.01</small></div>
+          </div>
+          <div class="eligibility-summary" id="eligibility-summary"></div>
+          <div class="condition-list" id="condition-list"></div>
+        </section>
+
+        <section class="step-panel" data-step-panel="3" hidden>
+          <div class="section-heading">
+            <div><span class="section-number">03</span><h2>계산에 사용할 공정과 계수를 설정합니다</h2></div>
+            <p>입력한 원단위는 보존하고, 계산 시 GJ·MWh·tCO2-eq 표준단위로 자동 환산합니다.</p>
+          </div>
+
+          <div class="panel-card form-card">
+            <div class="card-title-row"><div><span class="mini-label">PROCESS</span><h3>공정 및 연료</h3></div><span class="status-chip neutral">필수 설정</span></div>
+            <div class="form-grid three-columns">
+              <label class="field"><span>생산 공정명 <b>*</b></span><input type="text" data-bind="config.processName" placeholder="예: 아스팔트 혼합 공정"></label>
+              <label class="field"><span>화석연료 종류 <b>*</b></span><input type="text" data-bind="config.fuelType" placeholder="예: B-C유"></label>
+              <label class="field"><span>연료 사용량 단위 <b>*</b></span><select data-bind="config.fuelUnit"><option value="">선택</option><option value="kg">kg</option><option value="L">L</option><option value="Nm³">Nm³</option></select></label>
+            </div>
+          </div>
+
+          <div class="panel-card factor-card">
+            <div class="card-title-row"><div><span class="mini-label">EMISSION FACTORS</span><h3>연료 계수</h3></div><span class="card-note">활동일 기준 유효한 계수만 사용</span></div>
+            <div class="factor-grid">
+              <div class="factor-box">
+                <div class="factor-box-head"><span>순발열량</span><code>NCV</code></div>
+                <div class="input-with-unit"><input type="number" min="0" step="any" data-bind-number="config.ncv.value" placeholder="0.0"><select data-bind="config.ncv.unit"><option value="MJ/L">MJ/L</option><option value="MJ/kg">MJ/kg</option><option value="MJ/Nm³">MJ/Nm³</option></select></div>
+                <label class="compact-field"><span>출처</span><input type="text" data-bind="config.ncv.source" placeholder="고시·시험성적서 등"></label>
+                <div class="date-range"><label><span>적용 시작</span><input type="date" data-bind="config.ncv.from"></label><i>→</i><label><span>적용 종료</span><input type="date" data-bind="config.ncv.to"></label></div>
+              </div>
+              <div class="factor-box">
+                <div class="factor-box-head"><span>연료 배출계수</span><code>EF<sub>FF</sub></code></div>
+                <div class="input-with-unit"><input type="number" min="0" step="any" data-bind-number="config.fuelEf.value" placeholder="0.0"><select data-bind="config.fuelEf.unit"><option value="kgCO2-eq/TJ">kgCO2-eq/TJ</option><option value="tCO2-eq/GJ">tCO2-eq/GJ</option></select></div>
+                <label class="compact-field"><span>출처</span><input type="text" data-bind="config.fuelEf.source" placeholder="국가고유·IPCC 계수 등"></label>
+                <div class="date-range"><label><span>적용 시작</span><input type="date" data-bind="config.fuelEf.from"></label><i>→</i><label><span>적용 종료</span><input type="date" data-bind="config.fuelEf.to"></label></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="card-title-row"><div><span class="mini-label">GRID FACTOR HISTORY</span><h3>전력 배출계수 이력</h3></div><button class="button button-small button-outline" id="add-grid-factor" type="button">+ 계수 버전 추가</button></div>
+            <div class="table-wrap">
+              <table class="data-table factor-table">
+                <thead><tr><th>계수값</th><th>단위</th><th>출처</th><th>적용 시작</th><th>적용 종료</th><th></th></tr></thead>
+                <tbody id="grid-factor-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="card-title-row"><div><span class="mini-label">LEAKAGE</span><h3>누출량 산정방법</h3></div></div>
+            <div class="choice-cards">
+              <label class="choice-card"><input type="radio" name="leakage-method" value="factor"><span class="choice-radio"></span><span><strong>방법 1 · 누출계수 기반</strong><small>극소규모 사업 또는 제조 배출계수 산정이 어려운 경우, 사업 배출량의 2% 적용</small><code>LE = PE × 0.02</code></span></label>
+              <label class="choice-card"><input type="radio" name="leakage-method" value="actual"><span class="choice-radio"></span><span><strong>방법 2 · 실제 누출량 기반</strong><small>첨가제 제조 활동자료와 배합비를 사용해 직접 산정</small><code>LE = EF<sub>AD</sub> × MR<sub>AD</sub> × PA<sub>eligible</sub></code></span></label>
+            </div>
+            <div class="additive-fields" id="additive-fields" hidden>
+              <div class="subsection-title"><strong>첨가제 제조자료</strong><span>방법 2 선택 시 모두 입력해주세요.</span></div>
+              <div class="form-grid three-columns">
+                <label class="field"><span>첨가제 생산량 (t)</span><input type="number" min="0" step="any" data-bind-number="config.additive.production"></label>
+                <label class="field"><span>화석연료 사용량</span><input type="number" min="0" step="any" data-bind-number="config.additive.fuel"></label>
+                <label class="field"><span>전력 사용량 (kWh)</span><input type="number" min="0" step="any" data-bind-number="config.additive.electricity"></label>
+                <label class="field"><span>순발열량 (MJ/연료단위)</span><input type="number" min="0" step="any" data-bind-number="config.additive.ncv"></label>
+                <label class="field"><span>연료 배출계수 (kgCO2-eq/TJ)</span><input type="number" min="0" step="any" data-bind-number="config.additive.fuelEf"></label>
+                <label class="field"><span>중온 첨가제 배합비 (%)</span><input type="number" min="0" step="any" data-bind-number="config.additive.mixRate"></label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="step-panel" data-step-panel="4" hidden>
+          <div class="section-heading row-heading">
+            <div><span class="section-number">04</span><h2>사업 전 가열 아스팔트 자료를 입력합니다</h2></div>
+            <button class="button button-outline" id="add-baseline" type="button">+ 자료 추가</button>
+          </div>
+          <div class="baseline-metrics" id="baseline-metrics"></div>
+          <div class="panel-card table-card">
+            <div class="table-title"><div><h3>베이스라인 활동자료</h3><p>연도(YYYY) 또는 월(YYYY-MM) 단위로 입력할 수 있으며, 최소 1년·기본 3년 자료가 필요합니다.</p></div><span class="unit-caption">생산량 t · 연료 원단위 · 전력 kWh</span></div>
+            <div class="table-wrap">
+              <table class="data-table baseline-table">
+                <thead><tr><th>자료 연도/연월</th><th>가열 아스팔트<br>생산량 (t)</th><th>연료 종류</th><th>연료 사용량</th><th>전력 사용량<br>(kWh)</th><th>증빙</th><th></th></tr></thead>
+                <tbody id="baseline-body"></tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="baseline-empty"><span>＋</span><strong>등록된 베이스라인 자료가 없습니다</strong><p>‘자료 추가’를 눌러 사업 전 자료를 입력해주세요.</p></div>
+          </div>
+          <label class="panel-card reason-card" id="baseline-reason-wrap" hidden><span><strong>3년 미만 자료 사용 사유 <b>*</b></strong><small>자료가 1년 이상 3년 미만일 때 필수입니다.</small></span><textarea rows="3" data-bind="baselineReason" placeholder="3년 자료를 적용할 수 없는 사유를 입력해주세요."></textarea></label>
+        </section>
+
+        <section class="step-panel" data-step-panel="5" hidden>
+          <div class="section-heading row-heading">
+            <div><span class="section-number">05</span><h2>사업 후 월별 활동자료를 입력합니다</h2></div>
+            <button class="button button-outline" id="add-activity" type="button">+ 월 추가</button>
+          </div>
+
+          <details class="help-details">
+            <summary><span>측정·증빙 자료는 어떻게 준비하나요?</span><small>방법론 기반 수집 예시 보기</small></summary>
+            <div class="help-grid"><div><strong>연료</strong><p>유량계 누적값 차이와 구매량을 교차 확인</p></div><div><strong>전력</strong><p>계측값·시간대별 사용량과 고지서를 교차 확인</p></div><div><strong>생산량</strong><p>계근대와 생산일지로 가열·중온 생산을 구분</p></div><div><strong>온도·품질</strong><p>온도 측정자료와 제품검사성적서를 연결</p></div></div>
+          </details>
+
+          <div class="panel-card table-card activity-card">
+            <div class="table-title"><div><h3>월별 중온 아스팔트 생산자료</h3><p>130~140℃ 및 품질 적합 자료만 인정됩니다.</p></div><div class="legend"><span class="dot green"></span>인정 <span class="dot amber"></span>확인 <span class="dot red"></span>제외</div></div>
+            <div class="table-wrap wide-table-wrap">
+              <table class="data-table activity-table">
+                <thead><tr><th>대상 연월</th><th>생산량 (t)</th><th>연료 종류</th><th>연료 사용량</th><th>전력 (kWh)</th><th>온도 최솟값</th><th>온도 최댓값</th><th>등급</th><th>품질</th><th>증빙</th><th></th></tr></thead>
+                <tbody id="activity-body"></tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="activity-empty"><span>＋</span><strong>등록된 월별 자료가 없습니다</strong><p>‘월 추가’를 눌러 산정연도의 활동자료를 입력해주세요.</p></div>
+          </div>
+        </section>
+
+        <section class="step-panel" data-step-panel="6" hidden>
+          <div class="section-heading">
+            <div><span class="section-number">06</span><h2>계산 전 입력자료를 검토합니다</h2></div>
+            <p>산정 제외 자료는 계산에 포함되지 않습니다. 확인 필요 자료는 근거를 보완해주세요.</p>
+          </div>
+          <div class="review-summary" id="review-summary"></div>
+          <div class="panel-card table-card">
+            <div class="table-title"><div><h3>월별 검증 결과</h3><p>입력값, 인정 온도, 품질 및 증빙 연결 상태를 확인합니다.</p></div><button class="button button-small button-outline" type="button" data-go-step="5">입력자료 수정</button></div>
+            <div class="table-wrap"><table class="data-table review-table"><thead><tr><th>대상 연월</th><th>생산량</th><th>온도 범위</th><th>품질</th><th>증빙</th><th>검토 상태</th><th>사유</th></tr></thead><tbody id="review-body"></tbody></table></div>
+          </div>
+          <div class="validation-gate" id="validation-gate"></div>
+        </section>
+
+        <section class="step-panel" data-step-panel="7" hidden>
+          <div class="result-header">
+            <div><span class="result-label">GREENHOUSE GAS REDUCTION</span><h2><span id="result-year">—</span>년 온실가스 감축 산정 결과</h2><p id="result-subtitle">입력자료와 적용 계수를 기준으로 계산했습니다.</p></div>
+            <div class="result-status" id="result-status"><span></span>계산 전</div>
+          </div>
+          <div id="result-content"></div>
+        </section>
+      </main>
+
+      <footer class="wizard-footer">
+        <button class="button button-ghost" id="prev-step" type="button">← 이전</button>
+        <div class="footer-progress"><span id="footer-step-label">1 / 7</span><div><i id="footer-progress-bar"></i></div></div>
+        <button class="button button-primary" id="next-step" type="button">적용조건 확인 <span>→</span></button>
+      </footer>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="modal-backdrop" id="evidence-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="evidence-modal-title">
+      <div class="modal-head"><div><span class="mini-label">EVIDENCE</span><h2 id="evidence-modal-title">증빙 연결</h2></div><button class="icon-button" id="close-modal" type="button" aria-label="닫기">×</button></div>
+      <p class="modal-description">파일은 이 브라우저에서 이름만 임시로 보관됩니다. 실제 서버 전송은 포함되지 않은 프로토타입입니다.</p>
+      <div class="evidence-list" id="evidence-list"></div>
+      <div class="modal-actions"><button class="button button-ghost" id="cancel-modal" type="button">닫기</button><button class="button button-primary" id="save-evidence" type="button">연결 완료</button></div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
